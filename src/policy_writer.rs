@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
+use std::{fs, io};
 use serde::Serialize;
 use crate::user::{Action, Resource, Role, User};
 
@@ -58,6 +59,28 @@ impl CasbinPolicy {
       }
       wtr.flush()?;
     }
+    CasbinPolicy::merge_policy_files()?;
+    Ok(())
+  }
+
+  /// Juste a trick because csv writer cannot write lines with
+  /// different line numbers
+  fn merge_policy_files() -> Result<(), Box<dyn Error>> {
+    let mut out = fs::OpenOptions::new()
+      .append(true)
+      .create(true)
+      .open("accessControl/policies.csv")?;
+
+    let mut obj_pol = fs::OpenOptions::new()
+      .read(true)
+      .open("accessControl/objectPolicies.csv")?;
+
+    let mut gr_pol = fs::OpenOptions::new()
+      .read(true)
+      .open("accessControl/groupingPolicies.csv")?;
+
+    io::copy(&mut obj_pol, &mut out)?;
+    io::copy(&mut gr_pol, &mut out)?;
 
     Ok(())
   }
