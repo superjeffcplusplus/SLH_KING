@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::{fs, io};
 use serde::Serialize;
-use crate::user::{Action, Resource, Role, User};
+use crate::user::{Action, Role, User};
 
 #[derive(Serialize)]
 pub struct CasbinPolicy {
   pub p: String,
-  pub subject: Role,
-  pub object: Resource,
+  pub subject: String,
+  pub object: String,
   pub actions: Action,
 }
 
@@ -16,49 +16,72 @@ pub struct CasbinPolicy {
 struct CasbinGroupingPolicy {
   pub g: String,
   pub subject: String,
-  pub group: Role,
+  pub group: String,
 }
 
 impl CasbinPolicy {
   pub fn write_to_csv(user_db: &HashMap<String, User>) -> Result<(), Box<dyn Error>> {
-    { // Write policies for groups
-      let mut wtr = csv::WriterBuilder::new()
+    let students: Vec<&User> = user_db.values()
+      .filter(|&u| u.role == Role::STUDENT).collect();
+    let profs: Vec<&User> = user_db.values()
+      .filter(|&u| u.role == Role::PROF).collect();
+    let mut wtr_g = csv::WriterBuilder::new()
+      .has_headers(false)
+      .from_path("accessControl/groupingPolicies.csv")?;
+
+      let mut wtr_p = csv::WriterBuilder::new()
         .has_headers(false)
         .from_path("accessControl/objectPolicies.csv")?;
-      wtr.serialize(
+
+      // let mut wtr = csv::WriterBuilder::new()
+      //   .has_headers(false)
+      //   .from_path("accessControl/objectPolicies.csv")?;
+      wtr_p.serialize(
         CasbinPolicy {
           p: "p".to_string(),
-          subject: Role::STUDENT,
-          object: Resource::GRADES,
-          actions: Action::R,
+          subject: Role::PROF.to_string(),
+          object: "grades/all".to_string(),
+          actions: Action::Read,
         }
       )?;
-      wtr.serialize(
+      wtr_p.serialize(
         CasbinPolicy {
           p: "p".to_string(),
-          subject: Role::PROF,
-          object: Resource::GRADES,
-          actions: Action::RW,
+          subject: Role::PROF.to_string(),
+          object: "grades/all".to_string(),
+          actions: Action::Write,
         }
       )?;
-      wtr.flush()?;
-    }
+      for student in students {
+        wtr_p.serialize(
+          CasbinPolicy{
+            p: "p".to_string(),
+            subject: student.name.clone(),
+            object: format!("grades/{}", student.name),
+            actions: Action::Read,
+          }
+        )?;
+        wtr_g.serialize(
+          CasbinGroupingPolicy {
+            g: "g2".to_string(),
+            subject: format!("grades/{}",student.name),
+            group: "grades/all".to_string(),
+          }
+        )?;
+      }
+      wtr_p.flush()?;
 
 
-    {// Define users group
-      let mut wtr = csv::WriterBuilder::new()
-        .has_headers(false)
-        .from_path("accessControl/groupingPolicies.csv")?;
-      for u in user_db.values() {
+      for u in profs {
         let row = CasbinGroupingPolicy {
           g: "g".to_string(),
           subject: u.name.to_string(),
-          group: u.role,
+          group: u.role.to_string(),
         };
-        wtr.serialize(row)?;
+        wtr_g.serialize(row)?;
       }
-      wtr.flush()?;
-    }
+      wtr_g.flush()?;
+
     CasbinPolicy::merge_policy_files()?;
     Ok(())
   }

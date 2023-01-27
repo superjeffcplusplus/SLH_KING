@@ -8,6 +8,16 @@ pub enum Role {
   NONE,
 }
 
+impl Display for Role {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Role::STUDENT => write!(f, "Student"),
+      Role::PROF => write!(f, "Prof"),
+      Role::NONE => write!(f, "NONE"),
+    }
+  }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Resource {
   GRADES,
@@ -16,16 +26,16 @@ pub enum Resource {
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Action {
-  RW,
-  R,
+  Write,
+  Read,
   NONE,
 }
 
 impl Display for Action {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
     match self {
-      Action::RW => write!(f, "RW"),
-      Action::R =>  write!(f, "R"),
+      Action::Write => write!(f, "Write"),
+      Action::Read =>  write!(f, "Read"),
       Action::NONE =>  write!(f, "NONE"),
     }
   }
@@ -40,10 +50,10 @@ pub struct User {
 
 impl User {
   pub fn get_authorized_resource_descriptor(&self) -> String {
-    let prefix = "grades_".to_string();
+    let prefix = "grades/".to_string();
     let descriptor = match self.role {
       Role::STUDENT => prefix + self.name.as_str(),
-      Role::PROF => prefix + "*",
+      Role::PROF => prefix + "all",
       Role::NONE => "".to_string(),
     };
     descriptor

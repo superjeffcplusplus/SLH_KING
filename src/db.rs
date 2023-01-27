@@ -8,7 +8,6 @@ use std::sync::Mutex;
 use lazy_static::{__Deref, lazy_static};
 use log::{error, trace, warn};
 use crate::access_control::ACCESS_CTRL;
-use crate::state::STATE;
 
 use crate::user::{Action, User};
 
@@ -57,7 +56,7 @@ pub fn user_exits(username: &str) -> bool {
 
 pub fn get_student_grades(student_name: &str, requester: &User, resource: &str) -> Option<Vec<f32>> {
   let db = GRADE_DATABASE.deref().lock().unwrap();
-  let is_authorized = ACCESS_CTRL.check_authorization(requester.name.as_str(), resource, Action::R.to_string().as_str());
+  let is_authorized = ACCESS_CTRL.check_authorization(requester.name.as_str(), resource, Action::Read.to_string().as_str());
   if is_authorized {
     let out = match db.get(student_name) {
       None => None,

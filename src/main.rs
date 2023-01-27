@@ -6,7 +6,6 @@ use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
 use crate::db::{GRADE_DATABASE, USERS_DATABASE};
 use crate::hashing::compare_pwd_with_hash;
 use crate::policy_writer::CasbinPolicy;
-use crate::state::{STATE};
 use crate::user::{Role, User};
 
 mod hashing;

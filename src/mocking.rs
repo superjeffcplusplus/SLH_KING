@@ -15,4 +15,15 @@ pub fn add_users(user_db: &USERS_DATABASE) {
     };
     map.insert(u.to_string(), usr_obj);
   }
+  let users = ["alice", "bob", "charlie", "jeff", "student1","student2"];
+  for u in users {
+    let pwd_hash = new_hash_from_pwd("1234")
+      .expect("Unable to create mock data");
+    let usr_obj = User {
+      name: u.to_string(),
+      pwd_hash: pwd_hash.to_string(),
+      role: Role::STUDENT,
+    };
+    map.insert(u.to_string(), usr_obj);
+  }
 }
