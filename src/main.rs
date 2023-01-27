@@ -2,25 +2,33 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
-use std::iter::Map;
 use std::path::Path;
-use std::ptr::write;
 use std::sync::Mutex;
 
 use lazy_static::{__Deref, lazy_static};
-use log::{error, trace};
-use once_cell::sync::Lazy;
+use log::{error, trace, warn};
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
 use crate::hashing::compare_pwd_with_hash;
-use crate::user::User;
+use crate::state::State;
+use crate::user::{Role, User};
 
 mod hashing;
 mod mocking;
 mod user;
+mod state;
 
 const DATABASE_FILE: &str = "grades_db.json";
 const USERS_DATABASE_FILE: &str = "usr_db.json";
+
+lazy_static! {
+  static ref STATE: Mutex<State> = Mutex::new(State {
+    user: None,
+    authenticated: false,
+  });
+}
+
+
 
 lazy_static! {
     static ref GRADE_DATABASE: Mutex<HashMap<String, Vec<f32>>> = {
@@ -77,16 +85,15 @@ fn menu(teacher: &mut bool) {
   if *teacher {
     teacher_action();
   } else {
-    student_action(teacher);
+    //student_action(teacher);
   }
 }
 
-fn student_action(teacher: &mut bool) {
-  println!("*****\n1: See your grades\n2: Teachers' menu\n3: About\n0: Quit");
-  let choice = input().inside(0..=2).msg("Enter Your choice: ").get();
+fn student_action() {
+  println!("*****\n1: See your grades\n2: About\n0: Quit");
+  let choice = input().inside(0..=1).msg("Enter Your choice: ").get();
   match choice {
     1 => show_grades("Enter your name. Do NOT lie!"),
-    2 => become_teacher(teacher),
     0 => quit(),
     _ => panic!("impossible choice"),
   }
@@ -197,17 +204,27 @@ fn login() {
   let password: String = input().msg("Enter your password: ").get();
   let def_usr = User {
     name: "".to_string(),
+    pwd_hash: "".to_string(),
+    role: Role::NONE,
+  };
+  let tmp = USERS_DATABASE.lock().unwrap();
+  let db_rec = tmp.get(&username).unwrap_or(&def_usr);
+  if compare_pwd_with_hash(password.as_str(), db_rec.pwd_hash.as_str()) {
+    let mut s = STATE.lock().unwrap();
+    s.authenticated = true;
+    s.user = Some(db_rec.clone());
+  } else {
+    warn!("Authentication failure with username {}", username);
+  }
 
-  }
-  let db_rec = USERS_DATABASE.lock().unwrap().get(&username).unwrap_or()
-  match USERS_DATABASE.lock().unwrap().get(&username) {
-    Some(usr) => {
-      if compare_pwd_with_hash(password.as_str(), usr.pwd_hash.as_str()) {
-        *teacher = true
-      }
-    }
-    None => (),
-  }
+  // match USERS_DATABASE.lock().unwrap().get(&username) {
+  //   Some(usr) => {
+  //     if compare_pwd_with_hash(password.as_str(), usr.pwd_hash.as_str()) {
+  //       *teacher = true
+  //     }
+  //   }
+  //   None => (),
+  // }
 }
 
 fn main() {
@@ -220,8 +237,24 @@ fn main() {
     .unwrap();
   mocking::add_users(&USERS_DATABASE);
   welcome();
-  let mut teacher = false;
-  loop {
-    menu(&mut teacher);
+  login();
+  let s = STATE.deref().lock().unwrap();
+  if s.authenticated {
+    match &s.user {
+      Some(u) => {
+        match u.role {
+          Role::STUDENT => loop {
+            student_action()
+          },
+          Role::PROF => loop {
+            teacher_action()
+          },
+          Role::NONE => error!("User with NONE role."),
+        }
+      },
+      None => {
+        error!("No user defined after login.")
+      },
+    }
   }
 }
