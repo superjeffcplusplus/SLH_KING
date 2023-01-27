@@ -5,4 +5,7 @@
 5. replace `println!` with `trace!`
 6. add roles and login logic
 7. add access control with Casbin
-8. encrypt grades db 
+8. encrypt grades db
+9. panic! in code --> to remove
+10. no user input checking
+11. access logs

@@ -6,12 +6,15 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use lazy_static::{__Deref, lazy_static};
-use log::{error, trace};
+use log::{error, trace, warn};
+use crate::access_control::ACCESS_CTRL;
+use crate::state::STATE;
 
-use crate::user::{User};
+use crate::user::{Action, User};
 
 const DATABASE_FILE: &str = "db/grades_db.json";
 const USERS_DATABASE_FILE: &str = "db/usr_db.json";
+
 
 lazy_static! {
     pub static ref GRADE_DATABASE: Mutex<HashMap<String, Vec<f32>>> = {
@@ -26,7 +29,6 @@ lazy_static! {
 
 pub fn save_db() -> Result<(), Box<dyn Error>> {
   {
-    trace!("Saving grades!");
     // Declare the value to instantiate the lazy variable in case of quitting
     // directly after start
     let value = GRADE_DATABASE.lock().unwrap();
@@ -43,6 +45,29 @@ pub fn save_db() -> Result<(), Box<dyn Error>> {
   }
   trace!("Database successfully saved.");
   Ok(())
+}
+
+pub fn user_exits(username: &str) -> bool {
+  let db = GRADE_DATABASE.deref().lock().unwrap();
+  match db.get(username) {
+    None => false,
+    Some(_) => true,
+  }
+}
+
+pub fn get_student_grades(student_name: &str, requester: &User, resource: &str) -> Option<Vec<f32>> {
+  let db = GRADE_DATABASE.deref().lock().unwrap();
+  let is_authorized = ACCESS_CTRL.check_authorization(requester.name.as_str(), resource, Action::R.to_string().as_str());
+  if is_authorized {
+    let out = match db.get(student_name) {
+      None => None,
+      Some(val) => Some(val.clone())
+    };
+    out
+  } else {
+    warn!("Unauthorized attempt to access notes of {} by {}", student_name, requester.name);
+    None
+  }
 }
 
 fn read_grades_db<P: AsRef<Path>>(
