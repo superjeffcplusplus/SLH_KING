@@ -9,6 +9,7 @@ use lazy_static::{__Deref, lazy_static};
 use log::{debug, error, trace, warn};
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
+use crate::db::{GRADE_DATABASE, USERS_DATABASE};
 use crate::hashing::compare_pwd_with_hash;
 use crate::policy_writer::CasbinPolicy;
 use crate::state::State;
@@ -19,61 +20,14 @@ mod mocking;
 mod user;
 mod state;
 mod policy_writer;
+mod db;
 
-const DATABASE_FILE: &str = "db/grades_db.json";
-const USERS_DATABASE_FILE: &str = "db/usr_db.json";
 
 lazy_static! {
   static ref STATE: Mutex<State> = Mutex::new(State {
     user: None,
     authenticated: false,
   });
-}
-
-lazy_static! {
-    static ref GRADE_DATABASE: Mutex<HashMap<String, Vec<f32>>> = {
-      let map = read_grades_db(DATABASE_FILE).unwrap_or(HashMap::new());
-      Mutex::new(map)
-    };
-    pub static ref USERS_DATABASE: Mutex<HashMap<String, User>> = {
-        let map = read_usr_db(USERS_DATABASE_FILE).unwrap_or(HashMap::new());
-        Mutex::new(map)
-    };
-}
-
-// static mut GRADE_DATABASE: Lazy<HashMap<String, Vec<f32>>> = Lazy::new(|| {
-//     read_database_from_file(DATABASE_FILE).unwrap_or(HashMap::new())
-// });
-
-// static PROF_CREDENTIALS: Lazy<HashMap<String, String>> = Lazy::new(|| {
-//     read_prof_creds(PROF_CREDS_FILE).unwrap()
-// });
-
-fn read_grades_db<P: AsRef<Path>>(
-  path: P,
-) -> Result<HashMap<String, Vec<f32>>, Box<dyn Error>> {
-  let file = File::open(path)?;
-  let reader = BufReader::new(file);
-  let map = serde_json::from_reader(reader).map_err(|e| {
-    error!("Unable to read grades : {}",e);
-    e
-  })?;
-  Ok(map)
-}
-
-fn read_usr_db<P: AsRef<Path>>(
-  path: P
-) -> Result<HashMap<String, User>, Box<dyn Error>> {
-  let file = File::open(path)?;
-  let reader = BufReader::new(file);
-  let map = match serde_json::from_reader(reader) {
-    Ok(val) => val,
-    Err(e) => {
-      error!("Unable to read users db : {}",e);
-      panic!();
-    }
-  };
-  Ok(map)
 }
 
 fn welcome() {
@@ -132,26 +86,15 @@ fn enter_grade() {
 }
 
 fn quit() {
-  {
-    trace!("Saving grades!");
-    // Declare the value to instantiate the lazy variable in case of quitting
-    // directly after start
-    let value = GRADE_DATABASE.lock().unwrap();
-    let file = File::create(DATABASE_FILE).unwrap();
-    let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, value.deref()).unwrap();
-  }
-
-  {
-    trace!("Saving grades!");
-    let value = USERS_DATABASE.deref();
-    let file = File::create(USERS_DATABASE_FILE).unwrap();
-    let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, value).map_err(|e| {
-      error!("Cannot save prof cresds : {}",e);
-    }).unwrap();
-  }
-
+  match db::save_db() {
+    Ok(_) => {}
+    Err(e) => {
+      debug!("{}", e);
+      error!("Cannot write database.");
+      println!("An error occurred while saving data.");
+      std::process::exit(1);
+    }
+  };
   std::process::exit(0);
 }
 
