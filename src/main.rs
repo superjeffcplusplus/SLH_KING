@@ -6,10 +6,11 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use lazy_static::{__Deref, lazy_static};
-use log::{error, trace, warn};
+use log::{debug, error, trace, warn};
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
 use crate::hashing::compare_pwd_with_hash;
+use crate::policy_writer::CasbinPolicy;
 use crate::state::State;
 use crate::user::{Role, User};
 
@@ -17,6 +18,7 @@ mod hashing;
 mod mocking;
 mod user;
 mod state;
+mod policy_writer;
 
 const DATABASE_FILE: &str = "grades_db.json";
 const USERS_DATABASE_FILE: &str = "usr_db.json";
@@ -27,8 +29,6 @@ lazy_static! {
     authenticated: false,
   });
 }
-
-
 
 lazy_static! {
     static ref GRADE_DATABASE: Mutex<HashMap<String, Vec<f32>>> = {
@@ -48,7 +48,6 @@ lazy_static! {
 // static PROF_CREDENTIALS: Lazy<HashMap<String, String>> = Lazy::new(|| {
 //     read_prof_creds(PROF_CREDS_FILE).unwrap()
 // });
-
 
 fn read_grades_db<P: AsRef<Path>>(
   path: P,
@@ -79,14 +78,6 @@ fn read_usr_db<P: AsRef<Path>>(
 
 fn welcome() {
   println!("Welcome to KING: KING Is Not GAPS");
-}
-
-fn menu(teacher: &mut bool) {
-  if *teacher {
-    teacher_action();
-  } else {
-    //student_action(teacher);
-  }
 }
 
 fn student_action() {
@@ -192,12 +183,6 @@ fn quit() {
   std::process::exit(0);
 }
 
-// fn save_as_file<P: AsRef<Path>, K, V>(data: &HashMap<K, V>, path: P) {
-//     let file = File::create(path).unwrap();
-//     let writer = BufWriter::new(file);
-//     serde_json::to_writer(writer, data);
-// }
-
 fn login() {
   println!("Login");
   let username: String = input::<String>().msg("Enter your username: ").get();
@@ -216,15 +201,6 @@ fn login() {
   } else {
     warn!("Authentication failure with username {}", username);
   }
-
-  // match USERS_DATABASE.lock().unwrap().get(&username) {
-  //   Some(usr) => {
-  //     if compare_pwd_with_hash(password.as_str(), usr.pwd_hash.as_str()) {
-  //       *teacher = true
-  //     }
-  //   }
-  //   None => (),
-  // }
 }
 
 fn main() {
@@ -236,6 +212,19 @@ fn main() {
   )
     .unwrap();
   mocking::add_users(&USERS_DATABASE);
+  {
+    let usr_db = USERS_DATABASE.deref().lock().unwrap();
+    match CasbinPolicy::write_to_csv(&usr_db) {
+      Ok(_) => {}
+      Err(e) => {
+        debug!("{}", e);
+        error!("Cannot write policies file.");
+        println!("An error occurred. Quitting...");
+        std::process::exit(1);
+      }
+    };
+    // Unlock mutex
+  }
   welcome();
   login();
   let s = STATE.deref().lock().unwrap();
@@ -257,4 +246,6 @@ fn main() {
       },
     }
   }
+  println!("Unexpected end of program.");
+  std::process::exit(1);
 }

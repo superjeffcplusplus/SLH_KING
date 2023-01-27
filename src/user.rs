@@ -1,10 +1,23 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub enum Role {
   STUDENT,
   PROF,
-  NONE
+  NONE,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum Resource {
+  GRADES,
+  USERS,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+pub enum Action {
+  RW,
+  R,
+  NONE,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
