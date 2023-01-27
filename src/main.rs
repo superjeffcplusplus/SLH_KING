@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
@@ -20,8 +20,8 @@ mod user;
 mod state;
 mod policy_writer;
 
-const DATABASE_FILE: &str = "grades_db.json";
-const USERS_DATABASE_FILE: &str = "usr_db.json";
+const DATABASE_FILE: &str = "db/grades_db.json";
+const USERS_DATABASE_FILE: &str = "db/usr_db.json";
 
 lazy_static! {
   static ref STATE: Mutex<State> = Mutex::new(State {
@@ -115,34 +115,6 @@ fn show_grades(message: &str) {
     }
     None => panic!("User not in system"),
   };
-}
-
-fn become_teacher(teacher: &mut bool) {
-  let username: String = input::<String>().msg("Enter your username: ").get();
-  let password: String = input().msg("Enter your password: ").get();
-  match USERS_DATABASE.lock().unwrap().get(&username) {
-    Some(usr) => {
-      if compare_pwd_with_hash(password.as_str(), usr.pwd_hash.as_str()) {
-        *teacher = true
-      }
-    }
-    None => *teacher = false,
-  }
-  if !*teacher {
-    error!(
-             "Failed teacher login with username {} and password {}",
-             username, password
-         );
-  }
-  // {
-  //     *teacher = true;
-  // } else {
-  //     *teacher = false;
-  //     error!(
-  //         "Failed teacher login with username {} and password {}",
-  //         username, password
-  //     );
-  // }
 }
 
 fn enter_grade() {
