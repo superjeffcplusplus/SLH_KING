@@ -3,7 +3,7 @@ use lazy_static::{__Deref};
 use log::{debug, error, info, warn};
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
-use crate::db::{GRADE_DATABASE, USERS_DATABASE};
+use crate::db::{USERS_DATABASE};
 use crate::hashing::compare_pwd_with_hash;
 use crate::policy_writer::CasbinPolicy;
 use crate::user::{Role, User};
@@ -40,16 +40,15 @@ fn teacher_action(current_user: User) {
       let name: String = input().get();
       show_grades(name.as_str(), &current_user);
     },
-    2 => enter_grade(),
+    2 => enter_grade(&current_user),
     0 => quit(),
     _ => panic!("impossible choice"),
   }
 }
 
 fn show_grades(student_name: &str, current_user: &User) {
-  let resource = current_user.get_authorized_resource_descriptor();
   if db::user_exits(student_name) {
-    match db::get_student_grades(student_name, current_user, resource.as_str()) {
+    match db::get_student_grades(student_name, current_user) {
       Some(grades) => {
         println!("Here are the grades of user {}", student_name);
         println!("{:?}", grades);
@@ -65,18 +64,22 @@ fn show_grades(student_name: &str, current_user: &User) {
   }
 }
 
-fn enter_grade() {
-  println!("What is the name of the student?");
+fn enter_grade(current_user: &User) {
+  print!("What is the name of the student?");
   let name: String = input().get();
-  println!("What is the new grade of the student?");
-  let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
-  let mut db = GRADE_DATABASE.lock().unwrap();
-  match db.get_mut(&name) {
-    Some(v) => v.push(grade),
-    None => {
-      db.insert(name, vec![grade]);
-    }
-  };
+  if db::user_exits(&name) {
+    print!("What is the new grade of the student?");
+    let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
+    match db::add_grade(name.as_str(),&current_user, grade) {
+      None => {
+        error!("Adding note failed.");
+        println!("Operation failed");
+      },
+      Some(_) => println!("Note successfully added."),
+    };
+  } else {
+    println!("User not in system");
+  }
 }
 
 fn quit() {
