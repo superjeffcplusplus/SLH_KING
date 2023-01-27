@@ -6,10 +6,8 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use lazy_static::{__Deref, lazy_static};
-use log::{error, trace, warn};
-use simplelog::{Config, LevelFilter, TerminalMode, TermLogger};
+use log::{error, trace};
 
-use crate::state::State;
 use crate::user::{User};
 
 const DATABASE_FILE: &str = "db/grades_db.json";

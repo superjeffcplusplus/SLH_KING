@@ -1,12 +1,7 @@
-use std::collections::{HashMap};
-use std::error::Error;
-use std::fs::File;
-use std::io::{BufReader, BufWriter};
-use std::path::Path;
 use std::sync::Mutex;
 
 use lazy_static::{__Deref, lazy_static};
-use log::{debug, error, trace, warn};
+use log::{debug, error, warn};
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
 use crate::db::{GRADE_DATABASE, USERS_DATABASE};
