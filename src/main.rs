@@ -16,6 +16,7 @@ mod user;
 mod state;
 mod policy_writer;
 mod db;
+mod access_control;
 
 
 lazy_static! {
