@@ -1,9 +1,11 @@
 use std::sync::Mutex;
+use futures::executor::block_on;
 
 use lazy_static::{__Deref, lazy_static};
 use log::{debug, error, warn};
 use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
+use crate::access_control::AccessControl;
 use crate::db::{GRADE_DATABASE, USERS_DATABASE};
 use crate::hashing::compare_pwd_with_hash;
 use crate::policy_writer::CasbinPolicy;
@@ -23,6 +25,7 @@ lazy_static! {
   static ref STATE: Mutex<State> = Mutex::new(State {
     user: None,
     authenticated: false,
+    access_control: None,
   });
 }
 
@@ -136,9 +139,19 @@ fn main() {
     };
     // Unlock mutex
   }
+  let access_ctrl = match block_on(AccessControl::new()) {
+    Ok(val) => val,
+    Err(e) => {
+      debug!("{}", e);
+      error!("Create AccessControl failed.");
+      println!("Unexpected end of program.");
+      std::process::exit(1);
+    }
+  };
   welcome();
   login();
-  let s = STATE.deref().lock().unwrap();
+  let mut s = STATE.deref().lock().unwrap();
+  s.access_control = Some(access_ctrl);
   if s.authenticated {
     match &s.user {
       Some(u) => {

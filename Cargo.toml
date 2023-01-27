@@ -19,3 +19,4 @@ once_cell = "1.16"
 casbin = { version = "2.0.9", default-features = false, features = ["runtime-async-std", "logging", "incremental"] }
 tokio = { version = "1.10.0", features = ["fs", "io-util"] }
 csv = "1.1"
+futures = "0.3"
