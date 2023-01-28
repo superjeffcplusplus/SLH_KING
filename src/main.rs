@@ -5,6 +5,7 @@ use read_input::prelude::*;
 use simplelog::{ColorChoice, Config, LevelFilter, TerminalMode, TermLogger};
 use crate::db::{USERS_DATABASE};
 use crate::hashing::compare_pwd_with_hash;
+use crate::input_validation::is_usr_n_valid;
 use crate::policy_writer::CasbinPolicy;
 use crate::user::{Role, User};
 
@@ -15,6 +16,12 @@ mod state;
 mod policy_writer;
 mod db;
 mod access_control;
+mod input_validation;
+mod encryption;
+
+fn usr_name_input() -> String {
+  input().add_test(|i:&String| is_usr_n_valid(i)).msg("Enter username ( (A-Za-z){3,12} ) :").get()
+}
 
 fn welcome() {
   println!("Welcome to KING: KING Is Not GAPS");
@@ -32,11 +39,10 @@ fn student_action(current_user: User) {
 
 fn teacher_action(current_user: User) {
   println!("*****\n1: See grades of student\n2: Enter grades\n3 About\n0: Quit");
-  let choice = input().inside(0..=2).msg("Enter Your choice: ").get();
-
+  let choice = input().inside(0..=2).msg("Enter Your choice : ").get();
   match choice {
     1 => {
-      print!("Enter the name of the user of which you want to see the grades:");
+      println!("Enter the name of the user of which you want to see the grades:");
       let name: String = input().get();
       show_grades(name.as_str(), &current_user);
     },
@@ -66,7 +72,7 @@ fn show_grades(student_name: &str, current_user: &User) {
 
 fn enter_grade(current_user: &User) {
   print!("What is the name of the student?");
-  let name: String = input().get();
+  let name: String = usr_name_input();
   if db::user_exits(&name) {
     print!("What is the new grade of the student?");
     let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
@@ -97,8 +103,8 @@ fn quit() {
 
 fn login() -> Option<User> {
   println!("Login");
-  let username: String = input::<String>().msg("Enter your username: ").get();
-  let password: String = input().msg("Enter your password: ").get();
+  let username: String = usr_name_input();
+  let password: String = input().add_test(|i: &String| i.len() < 32).msg("Enter your password (max 32 char): ").get();
   let def_usr = User {
     name: "".to_string(),
     pwd_hash: "".to_string(),

@@ -7,5 +7,5 @@
 7. add access control with Casbin
 8. encrypt grades db
 9. panic! in code --> to remove
-10. no user input checking
+10. no user input checking -> add max length for pwd and username
 11. access logs
