@@ -20,7 +20,7 @@ mod input_validation;
 mod encryption;
 
 fn usr_name_input() -> String {
-  input().add_test(|i:&String| is_usr_n_valid(i)).msg("Enter username ( (A-Za-z){3,12} ) :").get()
+  input().add_test(|i:&String| is_usr_n_valid(i)).msg("Enter username (^(A-Za-z){3,12}$) : ").get()
 }
 
 fn welcome() {
@@ -123,7 +123,7 @@ fn login() -> Option<User> {
 
 fn main() {
   TermLogger::init(
-    LevelFilter::Trace,
+    LevelFilter::Info,
     Config::default(),
     TerminalMode::Stderr,
     ColorChoice::Auto,

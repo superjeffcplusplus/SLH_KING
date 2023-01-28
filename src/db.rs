@@ -109,7 +109,7 @@ fn read_grades_db(path: &str) -> Result<HashMap<String, Vec<f32>>, Box<dyn Error
   let map = match map_res {
     Ok(map) => map,
     Err(e) => {
-      info!("{}, Trying decrypt file first ...", e);
+      info!("Cannot deserialize DB, Trying decrypt file first ...");
       let key = read_b64_from_file("secret/key.txt")
         .map_err(|e| {
           error!("Cannot decrypt grades db, key not found.");

@@ -2,3 +2,4 @@
 *db.json
 *Policies.csv
 .DS_Store
+/secret
