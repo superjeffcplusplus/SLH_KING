@@ -1,15 +1,11 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Write};
 use std::path::Path;
 use std::sync::Mutex;
-use dryoc::classic::crypto_box::Nonce;
-use dryoc::classic::crypto_secretbox::{crypto_secretbox_keygen, Key};
-use dryoc::dryocsecretbox::NewByteArray;
 use lazy_static::{__Deref, lazy_static};
-use log::{error, info, trace, warn};
+use log::{debug, error, info, trace, warn};
 use crate::access_control::{ACCESS_CTRL};
 use crate::encryption::{create_encryption_key, create_nonce, decrypt_to_string, encrypt_string, read_b64_from_file, vec_to_key, vec_to_nonce};
 
@@ -109,14 +105,17 @@ fn read_grades_db(path: &str) -> Result<HashMap<String, Vec<f32>>, Box<dyn Error
   let map = match map_res {
     Ok(map) => map,
     Err(e) => {
+      debug!("{}", e);
       info!("Cannot deserialize DB, Trying decrypt file first ...");
       let key = read_b64_from_file("secret/key.txt")
         .map_err(|e| {
+          debug!("{}", e);
           error!("Cannot decrypt grades db, key not found.");
           e
         })?;
       let nonce = read_b64_from_file("secret/nonce.txt")
         .map_err(|e| {
+          debug!("{}", e);
           error!("Cannot decrypt grades db, nonce not found.");
           e
         })?;

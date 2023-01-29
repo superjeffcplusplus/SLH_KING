@@ -47,15 +47,3 @@ pub struct User {
   pub pwd_hash: String,
   pub role: Role
 }
-
-impl User {
-  pub fn get_authorized_resource_descriptor(&self) -> String {
-    let prefix = "grades/".to_string();
-    let descriptor = match self.role {
-      Role::STUDENT => prefix + self.name.as_str(),
-      Role::PROF => prefix + "all",
-      Role::NONE => "".to_string(),
-    };
-    descriptor
-  }
-}

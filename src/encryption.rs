@@ -3,8 +3,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 use dryoc::classic::crypto_secretbox::{crypto_secretbox_easy, crypto_secretbox_keygen, crypto_secretbox_open_easy, Key, Nonce};
 use base64::{Engine as _, engine::general_purpose};
-use dryoc::constants::{CRYPTO_SECRETBOX_MACBYTES, CRYPTO_SECRETBOX_NONCEBYTES};
-use std::{error, fmt, str};
+use dryoc::constants::{CRYPTO_SECRETBOX_MACBYTES};
+use std::{fmt, str};
 use dryoc::dryocsecretbox::NewByteArray;
 
 #[derive(Debug, Clone)]
